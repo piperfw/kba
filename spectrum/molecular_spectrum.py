@@ -41,7 +41,7 @@ group_comp.add_argument('-dt', default=0.05, type=float, help='Timestep to sampl
 group_comp.add_argument('-st', default=300, type=int, help='Final sample time')
 group_comp.add_argument('--correct-fft', action='store_true', help='Use corrected FFT algorithm')
 group_comp.add_argument('-over-sample-factor', default=16, type=int, help='Pad data up to this may times it\'s original length')
-group_plot.add_argument('-xlims', nargs=2, type=float, default=[2000,3000], help='Min/Max frequencies (meV) or wavelength (nm) to plot')
+group_plot.add_argument('-xlims', nargs=2, type=float, default=[-1000,1000], help='Min Max detuning (meV) e.g. -1000 1000 or wavelength (nm) to plot')
 group_plot.add_argument('--no-normalise', action='store_true', help='Don\'t normalise the spectrum')
 group_plot.add_argument('--emission', action='store_true', help='Plot emission predicted by Kennard-Stepanov relation')
 group_plot.add_argument('--wavelengths', action='store_true', help='Plot wavelength (nm) on x-axis instead of frequency (eV)')
@@ -62,7 +62,7 @@ if args['wavelengths']:
     XSCALE=1
     XLIMS = args['xlims']
 else:
-    XLABEL=r'\(\omega\) \rm{(meV)}'
+    XLABEL=r'\(\omega-\omega_0\) \rm{(meV)}'
     XSCALE=1000 # plot meV instead of eV
     args['freqs'] = True
     XLIMS = args['xlims']
@@ -70,7 +70,7 @@ else:
 plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
 plt.rc('font', **{'size':18})
-linewidth=3
+linewidth=2.5
 save_ext='.png' if args['png'] else '.pdf' 
 #YTICKS=[0.0,0.5,1.0] if not args['no_normalise'] else None
 YTICKS = None
@@ -191,15 +191,14 @@ def plot_spectrum(nus, lambdas, absorption, prefix=''):
     fig, ax = plt.subplots()
     label=r'\(a={a}, \nu_c={nuc}, \Gamma_\downarrow={dissipation}, T={TK}\text{{\rm{{K}}}}\)'.format(**args)
     ax.set_title(label, fontsize=16)
+    ax.set_xlabel(XLABEL)
     if args['freqs']:
-        ax.set_xlabel(r'\(\nu\) \rm{(meV)}')
-        x_var = XSCALE * nus
+        x_var = XSCALE * (nus-w0)
         ax.plot(x_var, absorption, label=r'\rm{absorption}')
     else:
         x_var, absorption = ascending_sort(lambdas, absorption)
         ax.plot(XSCALE * x_var, absorption)
-        ax.set_xlabel(r'\(\lambda \text{\rm{(nm)}}\)')
-    ylabel=r'\rm{Intensity (a.u.)}' if not args['no_normalise'] else '\rm{Intensity}'
+    ylabel=r'\rm{Intensity (a.u.)}' if not args['no_normalise'] else r'\rm{Intensity}'
     ax.set_ylabel(ylabel)
     if args['emission']:
         deltas = nus-w0
@@ -216,19 +215,21 @@ def plot_spectrum(nus, lambdas, absorption, prefix=''):
         ax.legend(fontsize=16)
     if PLOT_W0:
         if args['freqs']:
-            ax.axvline(x=XSCALE*w0, c=(1.0,0.0,0.0), alpha=0.65)
+            #ax.axvline(x=XSCALE*w0, c=(1.0,0.0,0.0), alpha=0.65)
+            ax.axvline(x=0, c='gray', alpha=.75)
         else:
+            ax.axvline(x=XSCALE*lambda0, c='gray', alpha=.75)
             ax.axvline(x=XSCALE*lambda0, c=(1.0,0.0,0.0), alpha=0.65)
-        handles, labels = ax.get_legend_handles_labels()
-        # manually define a new patch 
-        #red_line = Line2D([0], [0], color='green', label='\(\\omega_0={}\\text{{eV}}\)'.format(w0))
-        red_line = Line2D([0], [0], c=(1.0,0.0,0.0), alpha=0.65, 
-                          label=r'\(\omega_0={}\text{{\rm{{eV}}}}\)'.format(w0), linewidth=linewidth,
-                          )
-        # handles is a list, so append manual patch
-        handles.append(red_line) 
-        # plot the legend
-        ax.legend(handles=handles, fontsize=16)
+        #handles, labels = ax.get_legend_handles_labels()
+        ## manually define a new patch 
+        ##red_line = Line2D([0], [0], color='green', label='\(\\omega_0={}\\text{{eV}}\)'.format(w0))
+        #red_line = Line2D([0], [0], c=(1.0,0.0,0.0), alpha=0.65, 
+        #                  label=r'\(\omega_0={}\text{{\rm{{eV}}}}\)'.format(w0), linewidth=linewidth,
+        #                  )
+        ## handles is a list, so append manual patch
+        #handles.append(red_line) 
+        ## plot the legend
+        #ax.legend(handles=handles, fontsize=16)
     ax.set_xlim(XLIMS)
     plot_fp = f'{FIG_DIR}/{prefix}absorption{save_ext}'
     fig.savefig(plot_fp, bbox_inches='tight')
@@ -245,18 +246,24 @@ def multiplot(plot_data, prefix=''):
         if not args['no_normalise']:
             to_plot /= max_abs
         label='\(a={a}, \\nu_c={nuc}, \\Gamma_\\downarrow={dissipation}\)'.format(**data[-1])
-        ax.plot(XSCALE*data[0], to_plot, label=label, linewidth=linewidth)
+        if args['freqs']:
+            ax.plot(XSCALE*(data[0]-w0), to_plot, label=label, linewidth=linewidth)
+        else:
+            ax.plot(XSCALE*data[0], to_plot, label=label, linewidth=linewidth)
     if PLOT_W0:
         if args['freqs']:
-            ax.axvline(x=XSCALE*w0, c=(1.0,0.0,0.0), alpha=0.65, linewidth=linewidth)
+            #ax.axvline(x=XSCALE*w0, c=(1.0,0.0,0.0), alpha=0.65, linewidth=linewidth)
+            ax.axvline(x=0, c='gray', alpha=.75)
         else:
-            ax.axvline(x=lambda0, c=(1.0,0.0,0.0), alpha=0.65, linewidth=linewidth)
-        handles, labels = ax.get_legend_handles_labels()
-        red_line = Line2D([0], [0], c=(1.0,0.0,0.0), alpha=0.65, 
-                          label='\(\\omega_0={}\\text{{\\rm{{eV}}}}\)'.format(w0),
-                          linewidth=linewidth)
-        handles.append(red_line) 
-        ax.legend(handles=handles, fontsize=14)
+            ax.axvline(x=lambda0, c='gray', alpha=.75)
+            #ax.axvline(x=lambda0, c=(1.0,0.0,0.0), alpha=0.65, linewidth=linewidth)
+        ax.legend(fontsize=14)
+        #handles, labels = ax.get_legend_handles_labels()
+        #red_line = Line2D([0], [0], c=(1.0,0.0,0.0), alpha=0.65, 
+        #                  label='\(\\omega_0={}\\text{{\\rm{{eV}}}}\)'.format(w0),
+        #                  linewidth=linewidth)
+        #handles.append(red_line) 
+        #ax.legend(handles=handles, fontsize=14)
     else:
         ax.legend(fontsize=14)
     ax.set_xlim(XLIMS)

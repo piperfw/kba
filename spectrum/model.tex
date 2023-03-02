@@ -1,0 +1,25 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{mathtools}
+\usepackage{amssymb}
+\begin{document}
+\pagestyle{empty}
+\begin{align*}
+		H &= \frac{\omega_0}{2}\sigma^z + \sum_j \left[ \nu_j b^\dagger_j b_j +
+		\frac{\xi_j}{2}\left( b^\dagger_j + b_j \right)\sigma^z \right] \\
+		A(\omega-\omega_0) &= \frac{g^2 N}{2} \text{Re} \int_0^\infty
+		dt e^{i (\omega-\omega_0) t} \langle \sigma^-(t) \sigma^+(0) \rangle 
+		e^{-(\Gamma_\uparrow + \Gamma_\downarrow)t / 2} \\
+		&= \frac{g^2 N}{2} \text{Re} \int_0^\infty
+		dt e^{i (\omega-\omega_0) t} e^{-(\Gamma_\uparrow + \Gamma_\downarrow)t 
+		/ 2} e^{-C(t)} \\
+		C(t) &= \int \frac{J(\nu)}{\nu^2}
+		\left[ \coth\left( \frac{\beta \nu}{2} \right)
+		\left( 1- \cos \nu t \right)
+	 +i \sin \nu t\right] \\
+		J(\nu) &= \sum_n \xi^2_n \delta(\nu-\nu_n) \\
+		&= 2 a \nu^s\nu^{1-s}_c e^{-(\nu/\nu_c)^2}
+\end{align*}
+\end{document}
